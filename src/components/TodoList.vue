@@ -39,8 +39,8 @@
             class="list__edit-todo"
             :value="todo.title"
             ref="edit"
-            @keyup.enter="editTodo(todo.id, $event.target.value)"
-            @blur="editTodo(todo.id, $event.target.value)"
+            @keyup.enter="editTodo"
+            @blur="editTodo"
           >
         </div>
       </div>
@@ -97,13 +97,12 @@ export default {
       const regex = new RegExp(this.filter, "i");
       let result = JSON.parse(JSON.stringify(this.todos));
       result = result.filter((todo) => todo.title.match(regex));
-      if (this.editId) {
+      this.editId &&
         result.forEach((todo) => {
           if (todo.id === this.editId) {
             todo.edited = true;
           }
         });
-      }
       return result;
     },
   },
@@ -150,12 +149,12 @@ export default {
         this.$refs.edit[0].focus();
       });
     },
-    editTodo(id, newTitle) {
+    editTodo(event) {
       this.todos.forEach((todo) => {
-        if (todo.id === id) {
-          todo.title = newTitle;
+        if (todo.id === this.editId) {
+          todo.title = event.target.value;
         }
-      });
+      }, this);
       this.editId = null;
     },
   },
