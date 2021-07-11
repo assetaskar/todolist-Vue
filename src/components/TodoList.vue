@@ -5,21 +5,20 @@
         type="text"
         class="list__new-todo"
         placeholder="+ Новая задача"
-        v-model.trim="newTodo"
         @keyup.enter="createTodo"
-        @blur="newTodo = ''"
+        @blur="$event.target.value = ''"
       >
     </div>
     <div
       class="list"
-      v-for="todo of filterTodos"
+      v-for="todo of filterTodos.keys()"
       :key="todo.id"
     >
       <div class="list__checkbox">
         <input
           type="checkbox"
           :checked="todo.completed"
-          @change="toggleCompleted(todo.id)"
+          @change="todo.completed = !todo.completed"
         >
       </div>
       <div
@@ -28,8 +27,8 @@
       >
         <div
           class="title"
-          v-if="!todo.edited"
-          @dblclick="startEdit(todo.id)"
+          v-if="!filterTodos.get(todo)"
+          @dblclick="startEdit(todo)"
         >
           {{ todo.title }}
         </div>
@@ -47,7 +46,7 @@
       <div class="list__buttons">
         <button
           class="btn"
-          @click="deleteTodo(todo.id)"
+          @click="deleteTodo(todo)"
         >
           <img
             src="@/assets/delete.svg"
@@ -88,22 +87,19 @@ export default {
         title: "Третья задача",
       },
     ],
-    newTodo: "",
-    editId: null,
+    editedTodo: null,
   }),
 
   computed: {
     filterTodos() {
+      const map = new Map();
       const regex = new RegExp(this.filter, "i");
-      let result = JSON.parse(JSON.stringify(this.todos));
-      result = result.filter((todo) => todo.title.match(regex));
-      this.editId &&
-        result.forEach((todo) => {
-          if (todo.id === this.editId) {
-            todo.edited = true;
-          }
+      this.todos
+        .filter((todo) => todo.title.match(regex))
+        .forEach((todo) => {
+          todo === this.editedTodo ? map.set(todo, true) : map.set(todo, false);
         });
-      return result;
+      return map;
     },
   },
 
@@ -123,39 +119,27 @@ export default {
   },
 
   methods: {
-    toggleCompleted(id) {
-      this.todos.forEach((todo) => {
-        if (todo.id === id) {
-          todo.completed = !todo.completed;
-        }
-      });
+    deleteTodo(todo) {
+      this.todos.splice(this.todos.indexOf(todo), 1);
     },
-    deleteTodo(id) {
-      const index = this.todos.findIndex((todo) => todo.id === id);
-      this.todos.splice(index, 1);
-    },
-    createTodo() {
-      if (!this.newTodo) return false;
+    createTodo({ target }) {
+      if (!target.value.trim()) return false;
       this.todos.push({
         id: Date.now(),
         completed: false,
-        title: this.newTodo,
+        title: target.value.trim(),
       });
-      this.newTodo = "";
+      target.value = "";
     },
-    startEdit(id) {
-      this.editId = id;
+    startEdit(todo) {
+      this.editedTodo = todo;
       this.$nextTick(function () {
         this.$refs.edit[0].focus();
       });
     },
     editTodo(event) {
-      this.todos.forEach((todo) => {
-        if (todo.id === this.editId) {
-          todo.title = event.target.value;
-        }
-      }, this);
-      this.editId = null;
+      this.editedTodo.title = event.target.value;
+      this.editedTodo = null;
     },
   },
 };
